@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B909279C1CC2990E00C6EBEE /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = B909279B1CC2990E00C6EBEE /* main.c */; };
+		B909279C1CC2990E00C6EBEE /* webbench.c in Sources */ = {isa = PBXBuildFile; fileRef = B909279B1CC2990E00C6EBEE /* webbench.c */; };
+		B90927A31CC2998300C6EBEE /* socket.c in Sources */ = {isa = PBXBuildFile; fileRef = B90927A21CC2998300C6EBEE /* socket.c */; };
+		B90927A51CC3C1CA00C6EBEE /* test.c in Sources */ = {isa = PBXBuildFile; fileRef = B90927A41CC3C1CA00C6EBEE /* test.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +26,9 @@
 
 /* Begin PBXFileReference section */
 		B90927981CC2990E00C6EBEE /* webbench_demo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = webbench_demo; sourceTree = BUILT_PRODUCTS_DIR; };
-		B909279B1CC2990E00C6EBEE /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		B909279B1CC2990E00C6EBEE /* webbench.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = webbench.c; sourceTree = "<group>"; };
+		B90927A21CC2998300C6EBEE /* socket.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = socket.c; sourceTree = "<group>"; };
+		B90927A41CC3C1CA00C6EBEE /* test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,7 +61,9 @@
 		B909279A1CC2990E00C6EBEE /* webbench_demo */ = {
 			isa = PBXGroup;
 			children = (
-				B909279B1CC2990E00C6EBEE /* main.c */,
+				B909279B1CC2990E00C6EBEE /* webbench.c */,
+				B90927A21CC2998300C6EBEE /* socket.c */,
+				B90927A41CC3C1CA00C6EBEE /* test.c */,
 			);
 			path = webbench_demo;
 			sourceTree = "<group>";
@@ -118,7 +124,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B909279C1CC2990E00C6EBEE /* main.c in Sources */,
+				B90927A51CC3C1CA00C6EBEE /* test.c in Sources */,
+				B90927A31CC2998300C6EBEE /* socket.c in Sources */,
+				B909279C1CC2990E00C6EBEE /* webbench.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
