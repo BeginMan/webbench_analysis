@@ -108,8 +108,8 @@ static void usage(void)
 };
 int main(int argc, char *argv[])
 {
-    int opt=0;
-    int options_index=0;
+    int opt=0;              //getopt_long 返回的字符选项
+    int options_index=0;    //getopt_long最后一个参数，一般为NULL
     char *tmp=NULL;
     
     if(argc==1)
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
             case 'V': printf(PROGRAM_VERSION"\n");exit(0);
             case 't': benchtime=atoi(optarg);break;
             case 'p':
-                /* proxy server parsing server:port */
+                /* proxy server parsing server:port ,<server:port>*/
                 tmp=strrchr(optarg,':');
                 proxyhost=optarg;
                 if(tmp==NULL)
