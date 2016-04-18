@@ -134,6 +134,7 @@ int main(int argc, char *argv[])
                 /* proxy server parsing server:port ,<server:port>*/
                 tmp=strrchr(optarg,':');
                 proxyhost=optarg;
+                
                 if(tmp==NULL)
                 {
                     break;
@@ -148,8 +149,9 @@ int main(int argc, char *argv[])
                     fprintf(stderr,"Error in option --proxy %s Port number is missing.\n",optarg);
                     return 2;
                 }
-                *tmp='\0';
-                proxyport=atoi(tmp+1);break;
+                *tmp='\0';              // ???
+                proxyport=atoi(tmp+1);  //去掉前面的:, 如果:9050
+                break;
             case ':':
             case 'h':
             case '?': usage();return 2;break;
@@ -165,13 +167,17 @@ int main(int argc, char *argv[])
     
     if(clients==0) clients=1;
     if(benchtime==0) benchtime=60;
+    
     /* Copyright */
     fprintf(stderr,"Webbench - Simple Web Benchmark "PROGRAM_VERSION"\n"
             "Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.\n"
             );
-    build_request(argv[optind]);
+    
+    build_request(argv[optind]);    // optind为最后一个元素索引，argv[optind]表示最后一个参数，URL.
+    
     /* print bench info */
     printf("\nBenchmarking: ");
+    
     switch(method)
     {
         case METHOD_GET:
@@ -213,8 +219,8 @@ void build_request(const char *url)
     
     if(force_reload && proxyhost!=NULL && http10<1) http10=1;
     if(method==METHOD_HEAD && http10<1) http10=1;
-    if(method==METHOD_OPTIONS && http10<2) http10=2;
-    if(method==METHOD_TRACE && http10<2) http10=2;
+    if(method==METHOD_OPTIONS && http10<2) http10=2;    // HTTP/1.1 new add
+    if(method==METHOD_TRACE && http10<2) http10=2;      // HTTP/1.1 new add
     
     switch(method)
     {
@@ -227,52 +233,72 @@ void build_request(const char *url)
 		  
     strcat(request," ");
     
-    if(NULL==strstr(url,"://"))
+    if(NULL==strstr(url,"://"))     // 检查 url的正确性
     {
         fprintf(stderr, "\n%s: is not a valid URL.\n",url);
         exit(2);
     }
-    if(strlen(url)>1500)
+    if(strlen(url)>1500)            // 控制url在最大长度
     {
         fprintf(stderr,"URL is too long.\n");
         exit(2);
     }
     if(proxyhost==NULL)
-        if (0!=strncasecmp("http://",url,7))
-        { fprintf(stderr,"\nOnly HTTP protocol is directly supported, set --proxy for others.\n");
+        if ( 0 != strncasecmp("http://", url, 7))
+        {
+            fprintf(stderr,"\nOnly HTTP protocol is directly supported, set --proxy for others.\n");
             exit(2);
         }
     /* protocol/host delimiter */
-    i=strstr(url,"://")-url+3;
-    /* printf("%d\n",i); */
+    // 这段代码用于检查URL的合法性，如http://www.baidu.com/ 而非 http://www.baidu.com
     
-    if(strchr(url+i,'/')==NULL) {
+    // strstr(url,"://")的值 ://www.a.com
+    // strstr(url,"://")-url 为url对应位置索引，这里是4
+    // strstr(url,"://")-url+3, 则表示url从索引为7处开始的字符串，即去掉http://,剩余www.baidu.com/ 的部分
+    i=strstr(url,"://")-url+3;
+    
+    
+    if(strchr(url+i,'/')==NULL) {   // 这里规定，URL要以/结尾，如http://xx.xxx.xx.xx:8000/api/doc
         fprintf(stderr,"\nInvalid URL syntax - hostname don't ends with '/'.\n");
         exit(2);
     }
+    
     if(proxyhost==NULL)
     {
         /* get port from hostname */
-        if(index(url+i,':')!=NULL &&
-           index(url+i,':')<index(url+i,'/'))
+        // 如url 为 http://www.baidu.com:8000/api 例子
+        if(index(url+i,':')!=NULL && index(url+i,':') < index(url+i,'/'))   // 保证端口合法性
         {
-            strncpy(host,url+i,strchr(url+i,':')-url-i);
+            // 如 webbench -t 2 http://www.baidu.com:9000/api, 则host:www.baidu.com. 端口:9000
+            // 获取主机名
+            // strchr(url+i,':')为: :8000/api
+            // strchr(url+i,':')-url 表示到:8000/api的索引位置
+            // strchr(url+i,':')-url-i 则表示cp的内容恰好是去掉http://和:8000/api后的中间部分，得到的值：www.baidu.com
+            strncpy(host, url+i, strchr(url+i,':')-url-i);
+            
+            // 获取端口
+            // index(url+i,':')+1 得到的是 8000/api
+            // strchr(url+i, '/') 得到的是 /api
+            // strchr(url+i,'/')-index(url+i,':')-1 得到的数字是cp 8000/api的前四个字符，8000
             bzero(tmp,10);
-            strncpy(tmp,index(url+i,':')+1,strchr(url+i,'/')-index(url+i,':')-1);
-            /* printf("tmp=%s\n",tmp); */
+            strncpy(tmp, index(url+i,':')+1, strchr(url+i,'/')-index(url+i,':')-1);
             proxyport=atoi(tmp);
             if(proxyport==0) proxyport=80;
-        } else
-        {
-            strncpy(host,url+i,strcspn(url+i,"/"));
         }
-        // printf("Host=%s\n",host);
-        strcat(request+strlen(request),url+i+strcspn(url+i,"/"));
-    } else
+        else
+        {
+            // 如 webbench -t 2 http://www.baidu.com/, 则host:www.baidu.com. 端口:80
+            strncpy(host, url+i, strcspn(url+i,"/"));
+        }
+        /*printf("Host=%s, port:%d\n",host, proxyport);*/
+        strcat(request+strlen(request), url+i+strcspn(url+i,"/"));
+    }
+    else
     {
         // printf("ProxyHost=%s\nProxyPort=%d\n",proxyhost,proxyport);
         strcat(request,url);
     }
+    
     if(http10==1)
         strcat(request," HTTP/1.0");
     else if (http10==2)
@@ -280,21 +306,24 @@ void build_request(const char *url)
     strcat(request,"\r\n");
     if(http10>0)
         strcat(request,"User-Agent: WebBench "PROGRAM_VERSION"\r\n");
+    
     if(proxyhost==NULL && http10>0)
     {
         strcat(request,"Host: ");
         strcat(request,host);
         strcat(request,"\r\n");
     }
+    
     if(force_reload && proxyhost!=NULL)
     {
         strcat(request,"Pragma: no-cache\r\n");
     }
+    
     if(http10>1)
         strcat(request,"Connection: close\r\n");
     /* add empty line at end */
     if(http10>0) strcat(request,"\r\n");
-    // printf("Req=%s\n",request);
+//    printf("Req=%s\n",request);
 }
 
 /* vraci system rc error kod */
@@ -404,7 +433,7 @@ static int bench(void)
 
 void benchcore(const char *host,const int port,const char *req)
 {
-    int rlen;
+    ssize_t rlen;       // 作者原：int类型，我觉得改成ssize_t更好些
     char buf[1500];
     int s,i;
     struct sigaction sa;
@@ -417,6 +446,7 @@ void benchcore(const char *host,const int port,const char *req)
     alarm(benchtime);
     
     rlen=strlen(req);
+    
 nexttry:while(1)
 {
     if(timerexpired)

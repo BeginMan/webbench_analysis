@@ -10,6 +10,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 
 /* values */
@@ -111,8 +112,16 @@ int main(int argc, char *argv[])
             case 't': benchtime=atoi(optarg);break;
             case 'p':
                 /* proxy server parsing server:port ,<server:port>*/
+                printf("optarg:%s\n", optarg);
+                
                 tmp=strrchr(optarg,':');
+                
+                printf("tmp:%s\n", tmp);
+
                 proxyhost=optarg;
+                printf("new_optarg:%s\n", optarg);
+                printf("proxyhost:%s\n", proxyhost);
+                
                 if(tmp==NULL)
                 {
                     break;
@@ -127,8 +136,12 @@ int main(int argc, char *argv[])
                     fprintf(stderr,"Error in option --proxy %s Port number is missing.\n",optarg);
                     return 2;
                 }
-                *tmp='\0';
-                proxyport=atoi(tmp+1);break;
+                printf("o+1:%s\n", (optarg+strlen(optarg)-1));
+                *tmp='\0';      // ???
+                proxyport=atoi(tmp+1);      // 去掉前面的:, 如果:9050
+                printf("port:%d, host=%s\n", proxyport, proxyhost);
+                printf("*******************\n");
+                break;
             case ':':
             case 'h':
             case '?': usage();return 2;break;
@@ -144,10 +157,16 @@ int main(int argc, char *argv[])
     
     if(clients==0) clients=1;
     if(benchtime==0) benchtime=60;
-    /* Copyright */
-    fprintf(stderr,"Webbench - Simple Web Benchmark "PROGRAM_VERSION"\n"
-            "Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.\n"
-            );
+    
+    printf("http10:%d\n"
+           "method:%d\n"
+           "clients:%d\n"
+           "force:%d\n"
+           "force_reload:%d\n"
+           "proxyport:%d\n"
+           "benchtime:%d\n"
+           "proxyhost:%s\n",
+           http10,method,clients,force,force_reload, proxyport, benchtime,proxyhost);
 }
 
 
