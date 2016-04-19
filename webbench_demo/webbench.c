@@ -359,10 +359,10 @@ static int bench(void)
     for(i=0;i<clients;i++)
     {
         pid=fork();
-        if(pid <= (pid_t) 0)
+        if(pid <= (pid_t) 0)        // (pid_t) 0 类型转换
         {
             /* child process or error*/
-	           sleep(1); /* make childs faster */
+            sleep(1); /* make childs faster ????*/
             break;
         }
     }
@@ -377,6 +377,7 @@ static int bench(void)
     if(pid== (pid_t) 0)
     {
         /* I am a child */
+        // 子进程调用benchcore 发起请求
         if(proxyhost==NULL)
             benchcore(host,proxyport,request);
         else
@@ -390,10 +391,11 @@ static int bench(void)
             return 3;
         }
         /* fprintf(stderr,"Child - %d %d\n",speed,failed); */
+        // 格式化写入管道， %d %d %d 依次是speed(成功数),failed(失败数),bytes(字节数)
         fprintf(f,"%d %d %d\n",speed,failed,bytes);
         fclose(f);
         return 0;
-    } else
+    } else                  // 父进程开始读管道数据进行统计
     {
         f=fdopen(mypipe[0],"r");
         if(f==NULL)
@@ -401,14 +403,14 @@ static int bench(void)
             perror("open pipe for reading failed.");
             return 3;
         }
-        setvbuf(f,NULL,_IONBF,0);
+        setvbuf(f,NULL,_IONBF,0);  // 设置文件流缓冲区为无缓冲，直接从流中操作，数据更加及时更快些
         speed=0;
         failed=0;
         bytes=0;
         
         while(1)
         {
-            pid=fscanf(f,"%d %d %d",&i,&j,&k);
+            pid=fscanf(f,"%d %d %d",&i,&j,&k);      // 格式化从管道读取流
             if(pid<2)
             {
                 fprintf(stderr,"Some of our childrens died.\n");
@@ -433,23 +435,29 @@ static int bench(void)
 
 void benchcore(const char *host,const int port,const char *req)
 {
+    /*
+     * 子进程请求处理函数
+     */
     ssize_t rlen;       // 作者原：int类型，我觉得改成ssize_t更好些
     char buf[1500];
     int s,i;
     struct sigaction sa;
     
     /* setup alarm signal handler */
-    sa.sa_handler=alarm_handler;
+    sa.sa_handler=alarm_handler;  // 注册alarm_handler自定义函数，使用timerexpired全局变量跳出循环
     sa.sa_flags=0;
-    if(sigaction(SIGALRM,&sa,NULL))
-        exit(3);
+    if(sigaction(SIGALRM,&sa,NULL))     // 闹钟超时产生SIGALRM信号,则注册alarm_handler处理函数
+        exit(3);                        // 成功则退出
+    
+    //调用alarm函数设定一个闹钟，告诉内核在seconds秒之后给当前进程发SIGALRM信号
+    //这里处理的是请求超时问题
     alarm(benchtime);
     
     rlen=strlen(req);
     
 nexttry:while(1)
 {
-    if(timerexpired)
+    if(timerexpired)        // 超时则返回
     {
         if(failed>0)
         {
@@ -458,19 +466,27 @@ nexttry:while(1)
         }
         return;
     }
-    s=Socket(host,port);                          
-    if(s<0) { failed++;continue;} 
-    if(rlen!=write(s,req,rlen)) {failed++;close(s);continue;}
-    if(http10==0) 
+    
+    s=Socket(host,port);
+    
+    if(s<0) { failed++; continue;}
+    
+    //write()返回实际写入的字节数. 当有错误发生时则返回-1, 错误代码存入errno 中.
+    //注意不管成功失败都要记得close(s)
+    if(rlen != write(s, req, rlen)) {failed++; close(s); continue;}
+    
+    if(http10==0)       // 针对http0.9做的特殊处理
         if(shutdown(s,1)) { failed++;close(s);continue;}
-    if(force==0) 
+    
+    if(force==0)        // 全局变量force表示是否需要等待读取从server返回的数据，0表示要等待读取
     {
         /* read all available data from socket */
         while(1)
         {
-            if(timerexpired) break; 
-            i=read(s,buf,1500);
+            if(timerexpired) break;         // 超时 break
+            i=read(s,buf,1500);             // 从socket读取返回数据
             /* fprintf(stderr,"%d\n",i); */
+            // read返回实际读取到的字节数, 如果返回0, 表示已到达文件尾或是无可读取的数据,当有错误发生时则返回-1
             if(i<0) 
             { 
                 failed++;
@@ -483,7 +499,8 @@ nexttry:while(1)
                     bytes+=i;
         }
     }
-    if(close(s)) {failed++;continue;}
+    // 若顺利关闭则返回0, 发生错误时返回-1.
+    if(close(s)) {failed++;continue;}   // 也就是close异常时..
     speed++;
 }
 }
